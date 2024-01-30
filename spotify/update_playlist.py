@@ -111,8 +111,8 @@ class playlist:
             track = item['track']
             if track['uri'] in list(self.playlist.uri):
                 iindex = self.playlist.index[self.playlist['uri'] == track['uri']][0]
-                # if iindex != n:
-                self.playlist.at[iindex,'position'] = n
+                if iindex != n:
+                    self.playlist.at[iindex,'position'] = n
             else:
                 new_row = pd.DataFrame({'position':n,
                                         'name': track['name'],
@@ -126,9 +126,17 @@ class playlist:
                     new_row['show_name'] = item['track']['show']['name']
                 self.playlist = pd.concat([self.playlist, new_row], ignore_index=True)
         
-
+        # reored list according to position
         self.playlist.sort_values('position', ignore_index=True, inplace=True)
 
+        # check if len(new_playlist)==len(self.playlist) 
+        # and delete episodes that have been deleted in the meantime
+        if len(new_playlist['tracks']['items']) != len(self.playlist):
+            uris = [track['track']['uri'] for track in new_playlist['tracks']['items']]
+            for n in self.playlist.index:
+                if self.playlist.loc[n].uri not in uris:
+                    self.playlist.drop(n, inplace=True)
+        
 
     def print_playlist_tracks(self):
         '''
@@ -170,6 +178,8 @@ class playlist:
         get position in playlist of episodes of a show
         """
         self.update_playlist()
+        episodes = self.playlist[self.playlist.show_name == show_name]
+        '''
         episodes = {}
         for n,item in enumerate(self.playlist['tracks']['items']):
             try:
@@ -177,6 +187,7 @@ class playlist:
                     episodes[n] = item['track']['uri']
             except:
                 pass
+        '''
 
         return episodes
     
@@ -191,16 +202,17 @@ class playlist:
             new_episodes = self.get_new_episodes(show_name)
             episodes_in_playlist = self.get_episodes_in_playlist(show_name)
             
-            for ep in list(episodes_in_playlist.values()):
+            for ep in list(episodes_in_playlist.uri):
                 try:
                     new_episodes.remove(ep)
                 except ValueError:
                     pass
             
-            if len(new_episodes) > 0 :
+            if len(new_episodes) > 0 and len(new_episodes) < 10:
+                # print(f'\n{new_episodes}\n')
                 self.sp.playlist_add_items(playlist_id = self.list_id, 
                                            items=new_episodes, 
-                                           position=list(episodes_in_playlist.keys())[-1]+1)
+                                           position=episodes_in_playlist.iloc[-1].position+1)
                 if verbose:
                     for episode in new_episodes:
                         name = self.sp.episode(episode)['name']
@@ -236,7 +248,7 @@ def main():
     logger.warning('Playlist loaded.')
     
     for show_name in pl.daily_show_names:
-        pl.get_new_episodes(show_name)
+        pl.add_new_episodes(show_name)
         logger.warning(f'{show_name}: finished adding new episodes.')
 
     pl.delete_played_items()
