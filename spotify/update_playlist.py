@@ -1,14 +1,11 @@
 #!/usr/bin/activate
 
-import os
-import sys
-import time
-import json
 import pandas as pd
 pd.options.mode.copy_on_write = True
 import spotipy
 import numpy as np
-import telegram_send
+# import telegram_send
+from time import sleep
 
 from .utils import setup_logger
 
@@ -55,6 +52,7 @@ class playlist:
                      {long_show:self.find_uri_show(long_show) for long_show in self.long_show_names}
     
         self.playlist = self.get_playlist()
+        logger.info('Playlist loaded.')
 
     def find_uri_show(self, show_name, market='IT'):
         """
@@ -199,7 +197,7 @@ class playlist:
 
         new_episodes = self.get_new_episodes(show_name)
         if len(new_episodes) > 0:
-            new_episodes = self.get_new_episodes(show_name)
+            # new_episodes = self.get_new_episodes(show_name)
             episodes_in_playlist = self.get_episodes_in_playlist(show_name)
             
             for ep in list(episodes_in_playlist.uri):
@@ -216,7 +214,7 @@ class playlist:
                 if verbose:
                     for episode in new_episodes:
                         name = self.sp.episode(episode)['name']
-                        logger.warning(f'Added episode "{name}"')
+                        logger.info(f'Added episode "{name}"')
                 
                 self.update_playlist()
 
@@ -237,22 +235,26 @@ class playlist:
                       n_deleted += 1
                       self.playlist.drop(n, inplace=True)
                       if verbose:
-                          logger.warning(f'Deleted: "{track["name"]} - {track.show_name}"')
+                          logger.info(f'Deleted: "{track["name"]} - {track.show_name}"')
 
         self.update_playlist() 
 
+    def check_long_show(self, show_name):
+        episodes = self.playlist[self.playlist.show_name == show_name]
+        episode_played = episodes[episodes.played]
+        if not len(episode_played) > 0 :
+            logger.info(f'{show_name} is up to date.')
+        else:
+            pass
 
 
-def main():
-    pl = playlist()
-    logger.warning('Playlist loaded.')
+
+    def main(self):
+        
+        for show_name in self.daily_show_names:
+            self.add_new_episodes(show_name)
+            logger.info(f'{show_name}: finished adding new episodes.')
+            # sleep(1)
     
-    for show_name in pl.daily_show_names:
-        pl.add_new_episodes(show_name)
-        logger.warning(f'{show_name}: finished adding new episodes.')
-
-    pl.delete_played_items()
-    logger.warning('Finished deleting played episodes.')
-
-if __name__ == "__main__":
-    main()
+        self.delete_played_items()
+        logger.info('Finished deleting played episodes.')
