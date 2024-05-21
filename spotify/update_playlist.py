@@ -1,5 +1,6 @@
 #!/usr/bin/activate
 
+import os
 import pandas as pd
 pd.options.mode.copy_on_write = True
 import spotipy
@@ -25,8 +26,10 @@ class playlist:
         data_folder: path to 'data' file with usernam, clientID, clientsecret,
                                             list_id and show_names
         """
-        
-        with open(f'{data_folder}/data', 'r') as t:
+        file_path = os.path.dirname(__file__)
+        path_data = os.path.join(os.path.dirname(file_path), 'data/data') 
+        # with open(f'{data_folder}/data', 'r') as t:
+        with open(path_data, 'r') as t:
             data = t.readlines()
         
         self.username, clientID, clientsecret, self.list_id, show_names1, show_names2, _ = [d[:-1] for d in data]
