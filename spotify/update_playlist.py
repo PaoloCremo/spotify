@@ -84,6 +84,8 @@ class playlist:
         """
         
         playlist = self.sp.playlist(self.list_id, additional_types=('tracks', 'episodes'), market='IT')
+        playlist = self.check_playlist(playlist)
+
         df = pd.DataFrame(columns=['position','name','show_name','uri','played'])
 
         for n,item in enumerate(playlist['tracks']['items']):
@@ -101,6 +103,19 @@ class playlist:
             df = pd.concat([df,new_row], ignore_index=True, axis=0)
         
         return df
+    
+    def check_playlist(self, playlist):
+        for ni,item in enumerate(playlist['tracks']['items']):
+            if 'track' in item:
+                track = item['track']
+            else:
+                track = item
+            try:
+                track_url = track['external_urls']['spotify']
+            except TypeError:
+                playlist['tracks']['items'].pop(ni)
+    
+        return playlist
 
     def update_playlist(self):
         """
@@ -108,6 +123,8 @@ class playlist:
         """
         
         new_playlist = self.sp.playlist(self.list_id, additional_types=('tracks', 'episodes'), market='IT')
+        new_playlist = self.check_playlist(new_playlist)
+        
         for n,item in enumerate(new_playlist['tracks']['items']):
             track = item['track']
             if track['uri'] in list(self.playlist.uri):
