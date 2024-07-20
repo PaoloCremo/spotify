@@ -105,6 +105,7 @@ class playlist:
         return df
     
     def check_playlist(self, playlist):
+        '''
         for ni,item in enumerate(playlist['tracks']['items']):
             if 'track' in item:
                 track = item['track']
@@ -114,8 +115,20 @@ class playlist:
                 track_url = track['external_urls']['spotify']
             except TypeError:
                 playlist['tracks']['items'].pop(ni)
+        '''
+        while self.are_there_ghosts(playlist):
+            for ni,item in enumerate(playlist['tracks']['items']):
+                if item['track'] == None:
+                    playlist['tracks']['items'].pop(ni)
     
         return playlist
+    
+    def are_there_ghosts(self, playlist):
+        for ni,item in enumerate(playlist['tracks']['items']):
+            if item['track'] == None:
+                return True
+            else:
+                return False
 
     def update_playlist(self):
         """
