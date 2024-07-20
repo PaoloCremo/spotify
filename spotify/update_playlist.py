@@ -54,6 +54,8 @@ class playlist:
         self.shows = {daily_show:self.find_uri_show(daily_show) for daily_show in self.daily_show_names} | \
                      {long_show:self.find_uri_show(long_show) for long_show in self.long_show_names}
     
+        self.ghosts = np.array([])
+        self.count_ghosts(self.sp.playlist(self.list_id, additional_types=('tracks', 'episodes'), market='IT'))
         self.playlist = self.get_playlist()
         logger.info('Playlist loaded.')
 
@@ -73,6 +75,11 @@ class playlist:
     def get_plain_playlist(self):
         playlist = self.sp.playlist(self.list_id, additional_types=('tracks', 'episodes'), market='IT')
         return playlist
+    
+    def count_ghosts(self, playlist):
+        for ni,item in enumerate(playlist['tracks']['items']):
+            if item['track'] == None:
+                self.ghosts = np.append(self.ghosts, ni)
 
     def get_playlist(self):
         """
@@ -242,9 +249,11 @@ class playlist:
             
             if len(new_episodes) > 0 and len(new_episodes) < 10:
                 # print(f'\n{new_episodes}\n')
+                position0 = episodes_in_playlist.iloc[-1].position+1
+                position = position0 + len(self.ghosts[self.ghosts < position0])
                 self.sp.playlist_add_items(playlist_id = self.list_id, 
                                            items=new_episodes, 
-                                           position=episodes_in_playlist.iloc[-1].position+1)
+                                           position=position)
                 if verbose:
                     for episode in new_episodes:
                         name = self.sp.episode(episode)['name']
