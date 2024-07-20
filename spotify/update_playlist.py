@@ -128,7 +128,8 @@ class playlist:
             if item['track'] == None:
                 return True
             else:
-                return False
+                pass
+        return False
 
     def update_playlist(self):
         """
