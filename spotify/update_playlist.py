@@ -8,6 +8,8 @@ import numpy as np
 # import telegram_send
 from time import sleep
 
+import requests
+
 from .utils import setup_logger
 
 logger = setup_logger()
@@ -47,6 +49,10 @@ class playlist:
                                            client_secret=clientsecret,
                                            redirect_uri='http://localhost:8080/callback')
         self.sp = spotipy.Spotify(auth=token)
+        
+        self.headers = {
+                           "Authorization": f"Bearer {token}",
+                       }
         
         self.daily_show_names = show_names1.split(",")
         self.long_show_names  = show_names2.split(",")
@@ -90,8 +96,9 @@ class playlist:
         played: [T,F] --> Episode, None --> track
         """
         
+        self.delete_ghosts(self.list_id) # this delete all ghosts tracks
         playlist = self.sp.playlist(self.list_id, additional_types=('tracks', 'episodes'), market='IT')
-        playlist = self.check_playlist(playlist)
+        # playlist = self.check_playlist(playlist) # DEPRECATED
 
         df = pd.DataFrame(columns=['position','name','show_name','uri','played'])
 
@@ -113,15 +120,7 @@ class playlist:
     
     def check_playlist(self, playlist):
         '''
-        for ni,item in enumerate(playlist['tracks']['items']):
-            if 'track' in item:
-                track = item['track']
-            else:
-                track = item
-            try:
-                track_url = track['external_urls']['spotify']
-            except TypeError:
-                playlist['tracks']['items'].pop(ni)
+        DEPRECATED: use delete ghosts
         '''
         while self.are_there_ghosts(playlist):
             for ni,item in enumerate(playlist['tracks']['items']):
@@ -129,6 +128,42 @@ class playlist:
                     playlist['tracks']['items'].pop(ni)
     
         return playlist
+    
+    def get_playlist_tracks(self, playlist_id):
+        BASE_URL = "https://api.spotify.com/v1"
+        url = f"{BASE_URL}/playlists/{playlist_id}/tracks"
+        response = requests.get(url, headers=self.headers)
+        response.raise_for_status()  # Raise an error for bad responses
+        return response.json()
+    
+    def remove_tracks_by_position(self, user, playlist_id, tracks, snapshot_id):
+        """
+        credits: https://github.com/RatkoJ 
+                 @ https://github.com/spotipy-dev/spotipy/issues/95#issuecomment-627208310
+        """
+        plid = self.sp._get_id("playlist", playlist_id)
+        payload = {"snapshot_id": snapshot_id, "positions": []}
+        for tr in tracks:
+            payload["positions"].extend(tr["positions"])
+        return self.sp._delete(f"users/{user}/playlists/{plid}/tracks", payload=payload)
+    
+    def delete_ghosts(self, playlist_id):
+
+        tracks = self.get_playlist_tracks(playlist_id)
+    
+        # Identify ghost tracks
+        ghost_tracks = [
+            {"positions":[idx]} for idx, item in enumerate(tracks['items'])
+            if not item['track'] or not item['track'].get("uri")
+        ]
+        if ghost_tracks:
+            snapshot_id = self.sp.playlist(playlist_id)['snapshot_id']
+        
+            self.remove_tracks_by_position(self.sp.me()['id'],
+                                           playlist_id,
+                                           ghost_tracks,
+                                           snapshot_id)
+    
     
     def are_there_ghosts(self, playlist):
         for ni,item in enumerate(playlist['tracks']['items']):
@@ -205,10 +240,11 @@ class playlist:
         show = self.sp.show(self.shows[show_name])
         new_episodes = []
         for item in show['episodes']['items']:
-            if not item['resume_point']['fully_played'] :
-                new_episodes.append(item['uri'])
-            else:
-                break
+            if item:
+                if not item['resume_point']['fully_played'] :
+                    new_episodes.append(item['uri'])
+                else:
+                    break
 
         return new_episodes
     
