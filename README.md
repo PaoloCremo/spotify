@@ -49,9 +49,9 @@ Make sure to set up your Spotify API credentials and configure the necessary dat
 
 ## License
 
-[Add your chosen license here]
+This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details.
 
 
 ## Contact
 
-[Add your contact information or project maintainer details]
+Paolo Cremonese | [@PaoloCremo](https://github.com/PaoloCremo)
