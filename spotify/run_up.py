@@ -3,5 +3,5 @@
 import spotify as sp
 
 if __name__ == "__main__":
-    pl = sp.playlist()
+    pl = sp.Playlist()
     pl.main()
