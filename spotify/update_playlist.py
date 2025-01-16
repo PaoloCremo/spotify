@@ -77,7 +77,13 @@ class Playlist:
             if item['name'] == show_name:
                 return item['uri']
         return None
-
+    
+    def get_raw_playlist(self):
+        """
+        Retrieve the playlist from Spotify.
+        """
+        return self.sp.playlist(self.list_id, additional_types=('tracks', 'episodes'), market='IT')
+    
     def get_playlist(self) -> pd.DataFrame:
         """
         Retrieve the playlist and create a pandas DataFrame.
@@ -281,6 +287,72 @@ class Playlist:
                     logger.info(f'Deleted: "{track["name"]} - {track.show_name}"')
         
         self.update_playlist()
+
+    def find_next_episodes(self, show_name, last_ep_name):
+        """
+        Finds the next episodes of a given show after the specified last episode.
+
+        Args:
+            show_name (str): The name of the show.
+            last_ep_name (str): The name of the last episode watched.
+
+        Returns:
+            list: A list of URIs for the next three episodes in reverse order.
+        """
+        show_id = self.shows[show_name]
+        offset = 0
+        names = [dicct['name'] for dicct in self.sp.show_episodes(show_id, offset=offset)['items']]
+        while last_ep_name not in names:
+            offset += 50
+            names = [dicct['name'] for dicct in self.sp.show_episodes(show_id, offset=offset)['items']]
+        for n, name in enumerate(names):
+            if name == last_ep_name:
+                break
+        new_episodes = self.sp.show_episodes(show_id, offset=offset+n-3, limit=3)['items']
+        new_episodes_uri = [ep['uri'] for ep in new_episodes]
+        return new_episodes_uri[::-1]
+        
+
+    def manage_long_shows(self, verbose: bool = True) -> None:
+        """
+        Manage episodes of shows in self.long_show_names:
+        1. Check if there are at least 3 unplayed episodes of each show.
+        2. If not, find the next episodes and add them to the end of the playlist.
+        3. Delete played episodes of these shows from the playlist.
+        
+        Args:
+            verbose (bool): If True, log information about added and deleted episodes.
+        """
+        self.update_playlist()
+        
+        for show_name in self.long_show_names:
+            episodes = self.get_episodes_in_playlist(show_name)
+            played_episodes = episodes[episodes['played'] == True]
+            unplayed_episodes = episodes[episodes['played'] == False]
+            
+            # Check if there are less than 3 unplayed episodes
+            if len(unplayed_episodes) < 3:
+                last_ep_name = episodes['name'].iloc[-1]
+                new_episodes = self.find_next_episodes(show_name, last_ep_name)
+                episodes_to_add = 3 - len(unplayed_episodes)
+                
+                for episode in new_episodes[:episodes_to_add]:
+                    if episode not in episodes['uri'].tolist():
+                        position = episodes.position.iloc[-1] + 2
+                        self.sp.playlist_add_items(playlist_id=self.list_id, items=[episode], position=position)
+                        if verbose:
+                            episode_name = self.sp.episode(episode)['name']
+                            logger.info(f'Added episode "{episode_name}" to {show_name}')
+        
+            # Delete played episodes
+            for _, episode in played_episodes.iterrows():
+                to_remove = [{"uri": episode['uri'], "positions": [episode['position']]}]
+                self.sp.playlist_remove_specific_occurrences_of_items(self.list_id, to_remove)
+                if verbose:
+                    logger.info(f'Deleted: "{episode["name"]} - {show_name}"')
+    
+        self.update_playlist()
+
 
     def print_playlist_tracks(self):
         '''
