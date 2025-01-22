@@ -329,7 +329,10 @@ class Playlist:
             episodes = self.get_episodes_in_playlist(show_name)
             played_episodes = episodes[episodes['played'] == True]
             unplayed_episodes = episodes[episodes['played'] == False]
-            
+            if verbose:
+                logger.info(f'{show_name}: {len(unplayed_episodes)} unplayed episodes.')
+                logger.info(f'{show_name}: {len(played_episodes)} played episodes.')
+
             # Check if there are less than 3 unplayed episodes
             if len(unplayed_episodes) < 3:
                 last_ep_name = episodes['name'].iloc[-1]
@@ -369,6 +372,9 @@ class Playlist:
         for show_name in self.daily_show_names:
             self.add_new_episodes(show_name)
             logger.info(f'{show_name}: finished adding new episodes.')
+        
+        self.manage_long_shows()
+        logger.info('Finished managing long shows.')
         
         self.delete_played_items()
         logger.info('Finished deleting played episodes.')
