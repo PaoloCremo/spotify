@@ -218,7 +218,9 @@ class Playlist:
         show = self.sp.show(self.shows[show_name])
         new_episodes = []
         for item in show['episodes']['items']:
-            if item and not item['resume_point']['fully_played']:
+            if not item:
+                continue
+            elif not item['resume_point']['fully_played']:
                 new_episodes.append(item['uri'])
             else:
                 break
