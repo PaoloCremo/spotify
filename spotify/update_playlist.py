@@ -5,6 +5,7 @@ import pandas as pd
 import spotipy
 import numpy as np
 import requests
+from datetime import datetime
 from tabulate import tabulate
 from typing import List, Dict, Optional
 from .utils import setup_logger
@@ -380,3 +381,8 @@ class Playlist:
         
         self.delete_played_items()
         logger.info('Finished deleting played episodes.')
+
+        now = datetime.now()
+        database_path = "/home/paolo/database/spotify"
+        self.playlist.to_csv(path_or_buf=f"{database_path}/{now.day}-{now.hour}_myDailyChoice.csv", index=False)
+        logger.info(f'Saved list csv for day {now.day} at {now.hour}')
