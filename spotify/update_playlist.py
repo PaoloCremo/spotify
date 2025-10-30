@@ -384,5 +384,5 @@ class Playlist:
 
         now = datetime.now()
         database_path = "/home/paolo/database/spotify"
-        self.playlist.to_csv(path_or_buf=f"{database_path}/{now.day}-{now.hour}_myDailyChoice.csv", index=False)
+        self.playlist.to_csv(path_or_buf=f"{database_path}/{now.day}-{now.hour:02d}_myDailyChoice.csv", index=False)
         logger.info(f'Saved list csv for day {now.day} at {now.hour}')
