@@ -372,8 +372,8 @@ class Playlist:
     def delete_if_same(self, folder='/home/paolo/database/spotify'):
         listOfLists = os.listdir(folder)
         listOfLists.sort()
-        if filecmp.cmp(listOfLists[-2], listOfLists[-1]):
-            os.remove(listOfLists[-1])
+        if filecmp.cmp(f'{folder}/{listOfLists[-2]}', f'{folder}/{listOfLists[-1]}'):
+            os.remove(f'{folder}/{listOfLists[-1]}')
             logger.info(f'Deleted {listOfLists[-1]} from database.')
 
 
