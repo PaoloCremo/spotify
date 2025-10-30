@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import filecmp
 import pandas as pd
 import spotipy
 import numpy as np
@@ -367,6 +368,14 @@ class Playlist:
         nothing, only print
         '''
         print(tabulate(self.playlist, headers='keys', tablefmt='psql'))
+    
+    def delete_if_same(self, folder='/home/paolo/database/spotify'):
+        listOfLists = os.listdir(folder)
+        listOfLists.sort()
+        if filecmp.cmp(listOfLists[-2], listOfLists[-1]):
+            os.remove(listOfLists[-1])
+            logger.info(f'Deleted {listOfLists[-1]} from database.')
+
 
     def main(self) -> None:
         """
@@ -386,3 +395,5 @@ class Playlist:
         database_path = "/home/paolo/database/spotify"
         self.playlist.to_csv(path_or_buf=f"{database_path}/{now.day}-{now.hour}_myDailyChoice.csv", index=False)
         logger.info(f'Saved list csv for day {now.day} at {now.hour}')
+
+        self.delete_if_same(folder=database_path)
