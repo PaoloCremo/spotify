@@ -370,8 +370,8 @@ class Playlist:
         print(tabulate(self.playlist, headers='keys', tablefmt='psql'))
     
     def delete_if_same(self, folder='/home/paolo/database/spotify'):
-        listOfLists = os.listdir(folder)
-        listOfLists.sort()
+        listUnordered = os.listdir(folder)
+        listOfLists = sorted(listUnordered, key=lambda x: os.path.getmtime(os.path.join(folder, x)))
         if filecmp.cmp(f'{folder}/{listOfLists[-2]}', f'{folder}/{listOfLists[-1]}'):
             os.remove(f'{folder}/{listOfLists[-1]}')
             logger.info(f'Deleted {listOfLists[-1]} from database.')
