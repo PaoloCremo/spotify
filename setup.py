@@ -18,6 +18,7 @@ setuptools.setup(
         "spotipy",
         "numpy",
         "requests",
+        "tabulate"
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
