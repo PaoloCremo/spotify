@@ -48,18 +48,18 @@ class Playlist:
         
         scopes = ['playlist-modify-private', 'user-follow-read', 'playlist-read-private',
                   'playlist-modify-public', 'user-read-playback-position', 'user-library-read']
-        
+
+        cache_path = os.path.join(file_path, '.cache-' + self.username)
         token = spotipy.util.prompt_for_user_token(self.username, scope=scopes,
                                                    client_id=clientID,
                                                    client_secret=clientsecret,
-                                                   redirect_uri='http://localhost:8080/callback')
-        
+                                                   cache_path=cache_path,
+                                                   redirect_uri='http://127.0.0.1:8080/callback')
         sp = spotipy.Spotify(auth=token)
         headers = {"Authorization": f"Bearer {token}"}
         
         self.daily_show_names = show_names1.split(",")
         self.long_show_names = show_names2.split(",")
-        
         return sp, headers
 
     def find_uri_show(self, show_name: str, market: str = 'IT') -> Optional[str]:
