@@ -9,7 +9,7 @@ import requests
 from datetime import datetime
 from tabulate import tabulate
 from typing import List, Dict, Optional
-from .utils import setup_logger
+from .utils import setup_logger, get_spotify_client
 
 logger = setup_logger()
 
@@ -50,13 +50,12 @@ class Playlist:
                   'playlist-modify-public', 'user-read-playback-position', 'user-library-read']
 
         cache_path = os.path.join(file_path, '.cache-' + self.username)
-        token = spotipy.util.prompt_for_user_token(self.username, scope=scopes,
-                                                   client_id=clientID,
-                                                   client_secret=clientsecret,
-                                                   cache_path=cache_path,
-                                                   redirect_uri='http://127.0.0.1:8080/callback')
-        sp = spotipy.Spotify(auth=token)
-        headers = {"Authorization": f"Bearer {token}"}
+        sp = get_spotify_client(client_id=clientID,
+                                 client_secret=clientsecret,
+                                 redirect_uri='http://127.0.0.1:8080/callback',
+                                 scope=scopes,
+                                 cache_path=cache_path)
+        headers = {"Authorization": f"Bearer {sp.auth_manager.get_access_token(as_dict=False)}"}
         
         self.daily_show_names = show_names1.split(",")
         self.long_show_names = show_names2.split(",")
