@@ -25,7 +25,7 @@ def get_spotify_client(
         cache_path=cache_path,
         open_browser=open_browser,
     )
-    return spotipy.Spotify(auth_manager=auth_manager)
+    return spotipy.Spotify(auth_manager=auth_manager, requests_timeout=20, retries=3)
 
 
 def setup_logger() -> "logging.Logger":
