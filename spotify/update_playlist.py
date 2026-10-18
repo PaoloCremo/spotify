@@ -176,15 +176,7 @@ class Playlist:
         """
         Update the playlist DataFrame with the latest information from Spotify.
         """
-        for attempt in range(3):
-            try:
-                new_playlist = self.sp.playlist(self.list_id, additional_types=('tracks', 'episodes'), market='IT')
-                break
-            except requests.exceptions.RequestException as e:
-                if attempt == 2:
-                    raise
-                logger.warning(f"Playlist fetch failed ({e}), retrying...")
-                time.sleep(5 * (attempt + 1))
+        new_playlist = self.sp.playlist(self.list_id, additional_types=('tracks', 'episodes'), market='IT')
         
         for n, item in enumerate(new_playlist['tracks']['items']):
             track = item['track']

@@ -1,4 +1,6 @@
 import logging
+import time
+import requests
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
@@ -25,7 +27,36 @@ def get_spotify_client(
         cache_path=cache_path,
         open_browser=open_browser,
     )
-    return spotipy.Spotify(auth_manager=auth_manager, requests_timeout=20, retries=3)
+    sp = spotipy.Spotify(auth_manager=auth_manager, requests_timeout=20, retries=1)
+    return _RetryingClient(sp)
+
+
+class _RetryingClient:
+    """Proxy that retries any Spotify API call failing with a network error."""
+
+    def __init__(self, sp: "spotipy.Spotify", attempts: int = 4, backoff: float = 5.0):
+        self._sp = sp
+        self._attempts = attempts
+        self._backoff = backoff
+
+    def __getattr__(self, name):
+        attr = getattr(self._sp, name)
+        if not callable(attr):
+            return attr
+
+        def call(*args, **kwargs):
+            for attempt in range(self._attempts):
+                try:
+                    return attr(*args, **kwargs)
+                except requests.exceptions.RequestException as e:
+                    if attempt == self._attempts - 1:
+                        raise
+                    delay = self._backoff * 3 ** attempt
+                    logging.getLogger(__name__).warning(
+                        f"{name} failed ({e.__class__.__name__}), retry in {delay:.0f}s")
+                    time.sleep(delay)
+
+        return call
 
 
 def setup_logger() -> "logging.Logger":
